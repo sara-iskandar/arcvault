@@ -1,4 +1,4 @@
-ArcVault Intake and Triage Pipeline - Architecture Write-Up.
+ArcVault Intake and Triage Pipeline - Architecture Write-Up
 
 ## System Design
 
