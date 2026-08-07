@@ -1,4 +1,4 @@
-ArcVault Intake and Triage Pipeline
+## ArcVault Intake and Triage Pipeline
 
 AI-powered intake and triage workflow for a fictional company, ArcVault, built in n8n using Groq for classification and enrichment.
 
