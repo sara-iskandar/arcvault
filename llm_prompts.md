@@ -1,4 +1,4 @@
-ArcVault Intake Pipeline - Prompts
+# ArcVault Intake Pipeline - Prompts
 
 These are the two system prompts used in the pipeline, exactly as they're sent to Groq. Both go out as the system message, with the customer's raw text as the user message, response_format json_object, and temperature 0. I want valid JSON back and I want the same message to classify the same way every time, so there's no reason to let the model be creative here.
 
