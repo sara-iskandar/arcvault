@@ -8,4 +8,4 @@ Files:
 - llm_prompts.md, the two prompts used, with reasoning and tradeoffs (4.3)
 - project_architecture.md, system design, routing logic, escalation logic, and production-scale notes (4.4)
 
-Demo walkthrough: [add Loom link here]
+Demo walkthrough: https://www.loom.com/share/0dfc52b7ca1f431e93676dad39879ea5
