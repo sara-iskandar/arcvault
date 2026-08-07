@@ -1,0 +1,365 @@
+{
+  "name": "ArcVault - AI Intake & Triage Pipeline",
+  "nodes": [
+    {
+      "id": "17d7e9e5-43a4-4eb9-8b0a-2d9d3b5de3df",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "c38e0c79-ac1b-4af3-87f3-7f1e60501e34",
+      "name": "Load Test Messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        20,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Hardcoded sample intake data so this workflow can run end-to-end without a real webhook.\n// In production, replace this node with a Webhook / Form Trigger node that receives real messages.\nconst messages = [\n  {\n    \"id\": 1,\n    \"source\": \"Email\",\n    \"message\": \"Hi, I tried logging in this morning and keep getting a 403 error. My account is arcvault.io/user/jsmith. This started after your update last Tuesday.\"\n  },\n  {\n    \"id\": 2,\n    \"source\": \"Web Form\",\n    \"message\": \"We'd love to see a bulk export feature for our audit logs. We're a compliance-heavy org and this would save us hours every month.\"\n  },\n  {\n    \"id\": 3,\n    \"source\": \"Support Portal\",\n    \"message\": \"Invoice #8821 shows a charge of $1,240 but our contract rate is $980/month. Can someone look into this?\"\n  },\n  {\n    \"id\": 4,\n    \"source\": \"Email\",\n    \"message\": \"I'm not sure if this is the right place to ask, but is there a way to set up SSO with Okta? We're evaluating switching our auth provider.\"\n  },\n  {\n    \"id\": 5,\n    \"source\": \"Web Form\",\n    \"message\": \"Your dashboard stopped loading for us around 2pm EST. Checked our end — it's definitely on yours. Multiple users affected.\"\n  },\n  {\n    \"id\": 6,\n    \"source\": \"Support Portal\",\n    \"message\": \"Since upgrading to the new plan last week, our team can't export audit logs anymore — we get a permission denied error every time. Not sure if this is a billing/plan restriction or a bug, but it's blocking our monthly compliance report.\"\n  },\n  {\n    \"id\": 7,\n    \"source\": \"Web Form\",\n    \"message\": \"Hey, quick question about your product — does it work with Slack?\"\n  },\n  {\n    \"id\": 8,\n    \"source\": \"Support Portal\",\n    \"message\": \"We noticed some unauthorized access attempts on our account overnight — can someone confirm this wasn't a breach on your end?\"\n  }\n];\n\nreturn messages.map(m => ({ json: m }));"
+      }
+    },
+    {
+      "id": "a46a45ed-939c-4682-b51a-35cbedeab313",
+      "name": "Classify Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"temperature\": 0,\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    { \"role\": \"system\", \"content\": \"You are a strict JSON-only classification engine for ArcVault's customer support intake pipeline.\\n\\nClassify the customer message into exactly ONE category, assign a priority, and give a confidence score.\\n\\nCategories (pick exactly one):\\n- Bug Report: something that used to work is now broken (errors, crashes, unexpected behavior)\\n- Feature Request: a request for new or expanded functionality\\n- Billing Issue: anything about invoices, charges, pricing, or refunds\\n- Technical Question: how-to, integration, or configuration questions where nothing is broken\\n- Incident/Outage: a service is down or unavailable, especially affecting multiple users\\n\\nPriority guidance:\\n- High: outage, security issue, or something blocking multiple users\\n- Medium: affects one user's workflow but has a workaround, or a billing discrepancy\\n- Low: general question or minor/non-blocking request\\n\\nAmbiguity check: if the customer's own wording explicitly signals uncertainty between two categories (for example, phrasing like \\\"not sure if this is X or Y\\\"), or the message contains explicit language pointing to more than one category at once (for example, both a service malfunction AND a billing/plan/pricing restriction), treat this as a genuinely ambiguous case: still choose the single best-fit category, but cap confidence_score at 60 or below to reflect that ambiguity.\\n\\nRespond with ONLY a single valid JSON object and nothing else, no markdown, no code fences, no explanation. Schema:\\n{\\\"category\\\": \\\"Bug Report|Feature Request|Billing Issue|Technical Question|Incident/Outage\\\", \\\"priority\\\": \\\"Low|Medium|High\\\", \\\"confidence_score\\\": 0}\\n\\nconfidence_score is an integer from 0 to 100 representing how confident you are in the category choice. If the message could plausibly fit more than one category, pick the single best fit and LOWER the confidence_score instead of inventing a new category or splitting the difference.\" },\n    { \"role\": \"user\", \"content\": $json.message }\n  ]\n} }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "Groq API Key"
+        }
+      }
+    },
+    {
+      "id": "6743c947-b7b0-44b5-a46a-ac1eccc3aacb",
+      "name": "Enrich Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"temperature\": 0,\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    { \"role\": \"system\", \"content\": \"You are an information-extraction engine for ArcVault's support pipeline. You do not judge category or priority, another system already did that. Your only job is to pull out facts that are literally present in the message.\\n\\nRespond with ONLY a single valid JSON object and nothing else, no markdown, no code fences, no explanation. Schema:\\n{\\\"core_issue\\\": \\\"one sentence, plain language, describing what the customer actually needs or wants\\\", \\\"extracted_identifiers\\\": [\\\"any account IDs, URLs, invoice numbers, error codes, dollar amounts, dates, or product/vendor names that literally appear in the text\\\"], \\\"urgency_signal\\\": \\\"one short phrase capturing the language the customer used to signal urgency, e.g. 'multiple users affected', or 'no urgency language used' if none is present\\\"}\\n\\nOnly extract identifiers that literally appear in the text. Do not infer, guess, or invent values that are not written in the message.\" },\n    { \"role\": \"user\", \"content\": $('Ingested Message').item.json.message }\n  ]\n} }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "Groq API Key"
+        }
+      }
+    },
+    {
+      "id": "8f0a7dfb-1c0f-439a-b7d6-f031ee08b2d4",
+      "name": "Route & Escalate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "// This node is pure deterministic JavaScript — no AI calls here.\n// It reads the original message plus both Groq responses for THIS item (paired by item index)\n// and applies fixed if/else rules to pick a destination queue and an escalation flag.\n\nconst original = $('Ingested Message').item.json;\nconst classifyResponse = $('Classify Message').item.json;\nconst enrichResponse = $('Enrich Message').item.json;\n\n// Groq (OpenAI-compatible) responses put the model's JSON reply as a string at\n// choices[0].message.content, so we have to parse that string ourselves.\nfunction parseLLMJson(response) {\n  const content = response.choices[0].message.content;\n  return JSON.parse(content);\n}\n\nconst classification = parseLLMJson(classifyResponse);\nconst enrichment = parseLLMJson(enrichResponse);\n\nconst category = classification.category;\nconst priority = classification.priority;\nconst confidence_score = classification.confidence_score;\n\n// --- Rule 1: deterministic category -> team mapping -------------------------\nlet destination_queue;\nif (category === 'Bug Report') {\n  destination_queue = 'Engineering'; // code-level defects go straight to engineers\n} else if (category === 'Incident/Outage') {\n  destination_queue = 'Engineering'; // outages need immediate engineering attention\n} else if (category === 'Billing Issue') {\n  destination_queue = 'Billing'; // invoice / pricing / charge questions go to billing\n} else if (category === 'Feature Request') {\n  destination_queue = 'Product'; // feature asks feed the product backlog\n} else if (category === 'Technical Question') {\n  destination_queue = 'IT/Security'; // how-to / integration / auth questions (e.g. SSO) go to IT/Security\n} else {\n  destination_queue = 'Escalation'; // unrecognized category — safest default is a human\n}\n\n// --- Rule 2: escalation flag — any ONE of these four conditions overrides the routing above -\nconst messageText = (original.message || '').toLowerCase();\n\n// 2a. Literal escalation keywords in the raw customer text\nconst escalationKeywords = ['outage', 'down for all users'];\nconst hasEscalationKeyword = escalationKeywords.some(k => messageText.includes(k));\n\n// 2b. The classifier itself was not confident\nconst lowConfidence = confidence_score < 70;\n\n// 2c. Billing issue where a dollar amount mentioned in the text exceeds $500\nlet billingOverThreshold = false;\nif (category === 'Billing Issue') {\n  const amounts = messageText.match(/\\$[\\d,]+(\\.\\d+)?/g) || [];\n  billingOverThreshold = amounts.some(a => parseFloat(a.replace(/[$,]/g, '')) > 500);\n}\n\n// 2d. Security/compliance keywords — ArcVault's customers are explicitly compliance-heavy\n// (the whole product is audit logs), so a security incident is a distinct risk category\n// from a generic urgent-sounding message and deserves its own check, not a guess.\nconst securityKeywords = ['breach', 'unauthorized access', 'data leak'];\nconst hasSecurityKeyword = securityKeywords.some(k => messageText.includes(k));\n\nconst escalation_flag = lowConfidence || hasEscalationKeyword || billingOverThreshold || hasSecurityKeyword;\n\n// Escalation always wins over the normal routing rule above.\nif (escalation_flag) {\n  destination_queue = 'Escalation';\n}\n\nreturn {\n  json: {\n    id: original.id,\n    source: original.source,\n    message: original.message,\n    category,\n    priority,\n    confidence_score,\n    core_issue: enrichment.core_issue,\n    extracted_identifiers: enrichment.extracted_identifiers,\n    urgency_signal: enrichment.urgency_signal,\n    destination_queue,\n    escalation_flag\n  }\n};"
+      }
+    },
+    {
+      "id": "b09a0573-c622-4170-82fa-2bb621e969db",
+      "name": "Build Final Record",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        900,
+        300
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1dd5ad9-30f7-4a09-b420-541c6d8ef4bb",
+              "name": "id",
+              "type": "number",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "id": "7be12433-b639-4466-b199-732f98a4edf9",
+              "name": "source",
+              "type": "string",
+              "value": "={{ $json.source }}"
+            },
+            {
+              "id": "5fdd753f-7212-449e-b948-b584e17b6b3a",
+              "name": "message",
+              "type": "string",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "id": "b5778422-52d6-4055-8285-a9aafb50bcdf",
+              "name": "category",
+              "type": "string",
+              "value": "={{ $json.category }}"
+            },
+            {
+              "id": "4237b4d5-4b5f-4b14-9aff-9217e8a0ca1a",
+              "name": "priority",
+              "type": "string",
+              "value": "={{ $json.priority }}"
+            },
+            {
+              "id": "5feaaca7-f2cf-4360-9dc6-039682d7755b",
+              "name": "confidence_score",
+              "type": "number",
+              "value": "={{ $json.confidence_score }}"
+            },
+            {
+              "id": "bd472ffe-fd79-45dc-8efe-2747dbcd5a46",
+              "name": "core_issue",
+              "type": "string",
+              "value": "={{ $json.core_issue }}"
+            },
+            {
+              "id": "641287ac-d26d-4a56-8e38-9a7267639c87",
+              "name": "extracted_identifiers",
+              "type": "array",
+              "value": "={{ $json.extracted_identifiers }}"
+            },
+            {
+              "id": "64805bba-cc3b-4ef6-b2ad-213b62d8cc9c",
+              "name": "urgency_signal",
+              "type": "string",
+              "value": "={{ $json.urgency_signal }}"
+            },
+            {
+              "id": "191f44be-cfe6-4a96-b1ca-85a4131b4262",
+              "name": "destination_queue",
+              "type": "string",
+              "value": "={{ $json.destination_queue }}"
+            },
+            {
+              "id": "2189bfe5-266d-404f-b2dc-85f28c9a2062",
+              "name": "escalation_flag",
+              "type": "boolean",
+              "value": "={{ $json.escalation_flag }}"
+            },
+            {
+              "id": "061263d9-f0fb-4c36-a15d-a64b13f68773",
+              "name": "summary",
+              "type": "string",
+              "value": "={{ $json.core_issue.trim().replace(/[.!?]+$/, '') }}. This was classified as {{ /^[AEIOU]/.test($json.category) ? 'an' : 'a' }} {{ $json.category }} with {{ $json.priority }} priority ({{ $json.confidence_score }}% confidence) and routed to the {{ $json.destination_queue }} queue.{{ $json.escalation_flag ? ' It was auto-escalated because: ' + (($json.confidence_score < 70) ? 'low classifier confidence' : (($json.message || '').toLowerCase().includes('outage') || ($json.message || '').toLowerCase().includes('down for all users')) ? 'an outage keyword was detected' : (($json.message || '').toLowerCase().includes('breach') || ($json.message || '').toLowerCase().includes('unauthorized access') || ($json.message || '').toLowerCase().includes('data leak')) ? 'a security/compliance keyword was detected' : 'the billing amount exceeds $500') + '.' : '' }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "95d7c6e1-bf01-4592-bbf5-de14968dbc59",
+      "name": "Review Results",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "7a17a7db-cbaa-4df4-a130-551abfdce45e",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        480
+      ],
+      "webhookId": "4491bba0-8e55-4562-b411-d4b170aef691",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "arcvault-intake",
+        "responseMode": "lastNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "5720585d-9fa3-4f53-9a76-942233266a30",
+      "name": "Ingested Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        130,
+        390
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "080bf80c-9591-4718-9e44-f126da6abb71",
+              "name": "id",
+              "type": "string",
+              "value": "={{ $json.id !== undefined ? $json.id : (($json.body && $json.body.id !== undefined) ? $json.body.id : $execution.id) }}"
+            },
+            {
+              "id": "b889e488-d797-4b89-a53c-b79e83592c35",
+              "name": "source",
+              "type": "string",
+              "value": "={{ $json.source !== undefined ? $json.source : (($json.body && $json.body.source !== undefined) ? $json.body.source : 'Webhook') }}"
+            },
+            {
+              "id": "37babaa5-418e-4750-82e5-182e2d3d15b5",
+              "name": "message",
+              "type": "string",
+              "value": "={{ $json.message !== undefined ? $json.message : ($json.body && $json.body.message) }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Load Test Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Test Messages": {
+      "main": [
+        [
+          {
+            "node": "Ingested Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Message": {
+      "main": [
+        [
+          {
+            "node": "Enrich Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich Message": {
+      "main": [
+        [
+          {
+            "node": "Route & Escalate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route & Escalate": {
+      "main": [
+        [
+          {
+            "node": "Build Final Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Final Record": {
+      "main": [
+        [
+          {
+            "node": "Review Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Ingested Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ingested Message": {
+      "main": [
+        [
+          {
+            "node": "Classify Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

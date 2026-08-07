@@ -1,0 +1,128 @@
+[
+  {
+    "id": 1,
+    "source": "Email",
+    "message": "Hi, I tried logging in this morning and keep getting a 403 error. My account is arcvault.io/user/jsmith. This started after your update last Tuesday.",
+    "category": "Bug Report",
+    "priority": "Medium",
+    "confidence_score": 90,
+    "core_issue": "The customer is unable to log in due to a 403 error",
+    "extracted_identifiers": [
+      "403",
+      "arcvault.io/user/jsmith",
+      "Tuesday"
+    ],
+    "urgency_signal": "no urgency language used",
+    "destination_queue": "Engineering",
+    "escalation_flag": false,
+    "summary": "The customer is unable to log in due to a 403 error. This was classified as a Bug Report with Medium priority (90% confidence) and routed to the Engineering queue."
+  },
+  {
+    "id": 2,
+    "source": "Web Form",
+    "message": "We'd love to see a bulk export feature for our audit logs. We're a compliance-heavy org and this would save us hours every month.",
+    "category": "Feature Request",
+    "priority": "Medium",
+    "confidence_score": 90,
+    "core_issue": "The customer needs a bulk export feature for audit logs.",
+    "extracted_identifiers": [],
+    "urgency_signal": "no urgency language used",
+    "destination_queue": "Product",
+    "escalation_flag": false,
+    "summary": "The customer needs a bulk export feature for audit logs. This was classified as a Feature Request with Medium priority (90% confidence) and routed to the Product queue."
+  },
+  {
+    "id": 3,
+    "source": "Support Portal",
+    "message": "Invoice #8821 shows a charge of $1,240 but our contract rate is $980/month. Can someone look into this?",
+    "category": "Billing Issue",
+    "priority": "Medium",
+    "confidence_score": 90,
+    "core_issue": "The customer is disputing an invoice charge that exceeds their contract rate",
+    "extracted_identifiers": [
+      "Invoice #8821",
+      "$1,240",
+      "$980"
+    ],
+    "urgency_signal": "no urgency language used",
+    "destination_queue": "Escalation",
+    "escalation_flag": true,
+    "summary": "The customer is disputing an invoice charge that exceeds their contract rate. This was classified as a Billing Issue with Medium priority (90% confidence) and routed to the Escalation queue. It was auto-escalated because: the billing amount exceeds $500."
+  },
+  {
+    "id": 4,
+    "source": "Email",
+    "message": "I'm not sure if this is the right place to ask, but is there a way to set up SSO with Okta? We're evaluating switching our auth provider.",
+    "category": "Technical Question",
+    "priority": "Low",
+    "confidence_score": 80,
+    "core_issue": "The customer wants to set up SSO with Okta",
+    "extracted_identifiers": [
+      "Okta"
+    ],
+    "urgency_signal": "no urgency language used",
+    "destination_queue": "IT/Security",
+    "escalation_flag": false,
+    "summary": "The customer wants to set up SSO with Okta. This was classified as a Technical Question with Low priority (80% confidence) and routed to the IT/Security queue."
+  },
+  {
+    "id": 5,
+    "source": "Web Form",
+    "message": "Your dashboard stopped loading for us around 2pm EST. Checked our end — it's definitely on yours. Multiple users affected.",
+    "category": "Incident/Outage",
+    "priority": "High",
+    "confidence_score": 95,
+    "core_issue": "The customer's dashboard stopped loading",
+    "extracted_identifiers": [
+      "2pm EST"
+    ],
+    "urgency_signal": "Multiple users affected",
+    "destination_queue": "Engineering",
+    "escalation_flag": false,
+    "summary": "The customer's dashboard stopped loading. This was classified as an Incident/Outage with High priority (95% confidence) and routed to the Engineering queue."
+  },
+  {
+    "id": 6,
+    "source": "Support Portal",
+    "message": "Since upgrading to the new plan last week, our team can't export audit logs anymore — we get a permission denied error every time. Not sure if this is a billing/plan restriction or a bug, but it's blocking our monthly compliance report.",
+    "category": "Bug Report",
+    "priority": "High",
+    "confidence_score": 60,
+    "core_issue": "The customer cannot export audit logs due to a permission denied error",
+    "extracted_identifiers": [],
+    "urgency_signal": "blocking our monthly compliance report",
+    "destination_queue": "Escalation",
+    "escalation_flag": true,
+    "summary": "The customer cannot export audit logs due to a permission denied error. This was classified as a Bug Report with High priority (60% confidence) and routed to the Escalation queue. It was auto-escalated because: low classifier confidence."
+  },
+  {
+    "id": 7,
+    "source": "Web Form",
+    "message": "Hey, quick question about your product — does it work with Slack?",
+    "category": "Technical Question",
+    "priority": "Low",
+    "confidence_score": 90,
+    "core_issue": "The customer wants to know if the product is compatible with Slack",
+    "extracted_identifiers": [
+      "Slack"
+    ],
+    "urgency_signal": "no urgency language used",
+    "destination_queue": "IT/Security",
+    "escalation_flag": false,
+    "summary": "The customer wants to know if the product is compatible with Slack. This was classified as a Technical Question with Low priority (90% confidence) and routed to the IT/Security queue."
+  },
+  {
+    "id": 8,
+    "source": "Support Portal",
+    "message": "We noticed some unauthorized access attempts on our account overnight — can someone confirm this wasn't a breach on your end?",
+    "category": "Technical Question",
+    "priority": "High",
+    "confidence_score": 80,
+    "core_issue": "The customer wants confirmation of whether unauthorized access attempts were due to a breach on the vendor's end",
+    "extracted_identifiers": [],
+    "urgency_signal": "no urgency language used",
+    "destination_queue": "Escalation",
+    "escalation_flag": true,
+    "summary": "The customer wants confirmation of whether unauthorized access attempts were due to a breach on the vendor's end. This was classified as a Technical Question with High priority (80% confidence) and routed to the Escalation queue. It was auto-escalated because: a security/compliance keyword was detected."
+  }
+]
